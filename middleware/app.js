@@ -35,10 +35,12 @@ app.use(express.json());
 
 // Health check route
 app.use("/api/v1", healthRoutes);
-app.use("/api/v1/pyroscope",pyroscopeRoutes)
-app.use("/api/v1/nodeExporter",nodeExporterRoutes)
-app.use("/api/v1/statsExporter",statsExporterRoutes)
-app.use("/api/v1/transactions",transactionsRoutes)
-app.use("/api/v1/explorer",explorerRoutes)
+app.use("/api/v1/pyroscope", pyroscopeRoutes)
+app.use("/api/v1/nodeExporter", nodeExporterRoutes)
+app.use("/api/v1/statsExporter", statsExporterRoutes)
+app.use("/api/v1/transactions", transactionsRoutes)
+app.use("/api/v1/explorer", explorerRoutes)
+app.use("/api/v1/mcp", require("./routes/mcp"));
+
 
 module.exports = app;
