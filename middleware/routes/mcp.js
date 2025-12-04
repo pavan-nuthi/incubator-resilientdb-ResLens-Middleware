@@ -9,33 +9,16 @@ const logger = require('../utils/logger');
 const MAX_PROMPTS = 100;
 const prompts = [];
 
+const { exec } = require('child_process');
+const util = require('util');
+const execPromise = util.promisify(exec);
+const { fetchContainerMetrics } = require('../controllers/containerStats');
+
 /**
- * Helper to fetch current system metrics
+ * Helper to fetch current system metrics from Docker container
  */
 async function fetchSystemMetrics() {
-  try {
-    const baseUrl = getEnv("NODE_EXPORTER_BASE_URL", "http://localhost:9100");
-
-    // CPU Query: 1 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[1m])))
-    // Simplified: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[1m])) * 100)
-    const cpuQuery = '100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[1m])) * 100)';
-
-    // Memory Query: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100
-    const memQuery = '(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100';
-
-    const [cpuRes, memRes] = await Promise.all([
-      axios.get(buildUrl(baseUrl, { query: cpuQuery })),
-      axios.get(buildUrl(baseUrl, { query: memQuery }))
-    ]);
-
-    const cpu = parseFloat(cpuRes.data?.data?.result?.[0]?.value?.[1] || 0).toFixed(2);
-    const memory = parseFloat(memRes.data?.data?.result?.[0]?.value?.[1] || 0).toFixed(2);
-
-    return { cpu, memory };
-  } catch (error) {
-    logger.error("Failed to fetch metrics for MCP prompt:", error.message);
-    return { cpu: "N/A", memory: "N/A" };
-  }
+  return await fetchContainerMetrics();
 }
 
 /**
@@ -43,7 +26,7 @@ async function fetchSystemMetrics() {
  * Receive a new prompt execution log
  */
 router.post("/prompts", async (req, res) => {
-  const { tool, args, result, timestamp, duration } = req.body;
+  const { tool, args, result, timestamp, duration, resdb_metrics } = req.body;
 
   if (!tool) {
     return res.status(400).json({ error: "Missing tool name" });
@@ -60,7 +43,8 @@ router.post("/prompts", async (req, res) => {
     timestamp: timestamp || new Date().toISOString(),
     duration: duration || 0,
     receivedAt: new Date().toISOString(),
-    metrics
+    metrics,
+    resdb_metrics: resdb_metrics || {}
   };
 
   // Add to beginning of array
