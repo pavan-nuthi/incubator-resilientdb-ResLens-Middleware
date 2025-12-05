@@ -40,6 +40,7 @@ app.use("/api/v1/nodeExporter", nodeExporterRoutes)
 app.use("/api/v1/statsExporter", statsExporterRoutes)
 app.use("/api/v1/transactions", transactionsRoutes)
 app.use("/api/v1/explorer", explorerRoutes)
+app.use('/api/v1/health', require('./routes/health'));
 app.use("/api/v1/containerStats", require("./routes/containerStats"));
 app.use("/api/v1/mcp", require("./routes/mcp"));
 
